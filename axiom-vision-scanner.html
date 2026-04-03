@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiom Vision Scanner — SOL</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0d0f;
+    --bg2: #141417;
+    --bg3: #1a1a1f;
+    --border: #2a2a32;
+    --border2: #3a3a45;
+    --text: #e8e8f0;
+    --text2: #8888a0;
+    --text3: #55556a;
+    --purple: #9945FF;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  a { color: var(--purple); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* HEADER */
+  .hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .hdr-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+  .logo span { color: var(--purple); }
+  .chain-badge {
+    background: #9945FF22;
+    color: var(--purple);
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    border: 1px solid #9945FF44;
+    font-weight: 600;
+  }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .live-txt { font-size: 11px; color: var(--text2); }
+  .hdr-right { display: flex; gap: 8px; align-items: center; }
+
+  /* BUTTONS */
+  .btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text2);
+    font-family: 'Courier New', monospace;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--purple); color: var(--text); }
+  .btn-purple {
+    background: var(--purple);
+    border-color: var(--purple);
+    color: #fff;
+    font-weight: 600;
+  }
+  .btn-purple:hover { background: #7c2de0; border-color: #7c2de0; color: #fff; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 3px;
+    background: var(--bg2);
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+    width: fit-content;
+  }
+  .tab {
+    padding: 5px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text2);
+    border: none;
+    background: transparent;
+    font-family: 'Courier New', monospace;
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: var(--bg3);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    font-weight: 600;
+  }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* FILTERS */
+  .filters-panel {
+    display: none;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .filters-panel.open { display: flex; }
+  .filter-group { display: flex; flex-direction: column; gap: 4px; }
+  .filter-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
+  .filter-input, .filter-select {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--text);
+    width: 110px;
+    font-family: 'Courier New', monospace;
+    transition: border-color 0.15s;
+  }
+  .filter-input:focus, .filter-select:focus { outline: none; border-color: var(--purple); }
+  .filter-select option { background: var(--bg2); }
+
+  /* STATS */
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border-radius: 8px;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    flex: 1;
+    min-width: 120px;
+  }
+  .stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-val { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 4px; }
+  .stat-sub { font-size: 10px; color: var(--green); margin-top: 2px; }
+
+  /* TABLE */
+  .tbl-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 750px;
+  }
+  thead th {
+    padding: 9px 14px;
+    text-align: left;
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.1s;
+    user-select: none;
+  }
+  thead th:hover { color: var(--text); }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg2); }
+  td {
+    padding: 9px 14px;
+    color: var(--text);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .token-name { font-weight: 600; font-size: 13px; }
+  .token-addr { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .green { color: var(--green); }
+  .red { color: var(--red); }
+  .gray { color: var(--text2); }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .badge-hot { background: #ef444420; color: var(--red); border: 1px solid #ef444440; }
+  .badge-new { background: #22c55e20; color: var(--green); border: 1px solid #22c55e40; }
+  .badge-warn { background: #f59e0b20; color: var(--amber); border: 1px solid #f59e0b40; }
+  .badge-purple { background: #9945FF20; color: var(--purple); border: 1px solid #9945FF40; }
+
+  /* VOL BAR */
+  .vol-bar-wrap { background: var(--border); border-radius: 2px; height: 3px; width: 60px; margin-top: 4px; }
+  .vol-bar { background: var(--purple); border-radius: 2px; height: 3px; }
+
+  /* SPINNER */
+  .loading { text-align: center; padding: 60px; color: var(--text2); font-size: 13px; }
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--purple);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ERROR */
+  .error-box {
+    background: #ef444415;
+    border: 1px solid #ef444430;
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: var(--red);
+    font-size: 12px;
+    margin: 8px 0;
+    line-height: 1.6;
+  }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 16px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .count-badge {
+    font-size: 10px;
+    background: var(--bg3);
+    color: var(--text2);
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* LINK */
+  .trade-link {
+    color: var(--purple);
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 3px 8px;
+    border: 1px solid #9945FF40;
+    border-radius: 5px;
+    transition: all 0.15s;
+    display: inline-block;
+  }
+  .trade-link:hover {
+    background: #9945FF20;
+    text-decoration: none;
+  }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">AXIOM <span>VISION</span></div>
+    <div class="chain-badge">◎ SOL</div>
+    <span class="live-dot"></span>
+    <span class="live-txt" id="last-upd">conectando...</span>
+  </div>
+  <div class="hdr-right">
+    <button class="btn" onclick="toggleFilters()">⚙ Filtros</button>
+    <button class="btn" onclick="loadData()">↻ Refresh</button>
+    <a class="btn btn-purple" href="https://axiom.trade/vision?chain=sol" target="_blank">Abrir Axiom ↗</a>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="setTab('trending',this)">🔥 Trending</button>
+  <button class="tab" onclick="setTab('new',this)">✦ Nuevos</button>
+  <button class="tab" onclick="setTab('boosted',this)">⚡ Boosted</button>
+  <button class="tab" onclick="setTab('traders',this)">👤 Top Traders</button>
+</div>
+
+<!-- FILTERS PANEL -->
+<div class="filters-panel" id="filters-panel">
+  <div class="filter-group">
+    <div class="filter-label">Min MC ($)</div>
+    <input class="filter-input" id="f-minmc" type="number" placeholder="10000" value="10000">
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">Max MC ($)</div>
+    <input class="filter-input" id="f-maxmc" type="number" placeholder="Sin límite" value="">
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">Min Vol 24h ($)</div>
+    <input class="filter-input" id="f-minvol" type="number" placeholder="20000" value="20000">
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">Max Edad</div>
+    <select class="filter-select" id="f-age">
+      <option value="0">Cualquiera</option>
+      <option value="15">15 min</option>
+      <option value="30">30 min</option>
+      <option value="60">1 hora</option>
+      <option value="360">6 horas</option>
+      <option value="1440">24 horas</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">Min Txns</div>
+    <input class="filter-input" id="f-mintxns" type="number" placeholder="100" value="100">
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">Min Liquidez ($)</div>
+    <input class="filter-input" id="f-minliq" type="number" placeholder="5000" value="5000">
+  </div>
+  <button class="btn btn-purple" onclick="applyFilters()">Aplicar filtros</button>
+  <button class="btn" onclick="resetFilters()">Resetear</button>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-label">Tokens escaneados</div>
+    <div class="stat-val" id="s-total">—</div>
+    <div class="stat-sub">SOL chain</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Volumen total 24h</div>
+    <div class="stat-val" id="s-vol">—</div>
+    <div class="stat-sub" id="s-vol-sub">activos en SOL</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">% al alza (1h)</div>
+    <div class="stat-val green" id="s-pos">—</div>
+    <div class="stat-sub" id="s-pos-sub">tokens positivos</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Mayor ganancia 1h</div>
+    <div class="stat-val green" id="s-top">—</div>
+    <div class="stat-sub" id="s-top-name">—</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="main-section">
+  <div class="loading"><span class="spinner"></span>Cargando datos de Solana...</div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>Datos: DexScreener API · Auto-refresh cada 60s · Solo Solana</span>
+  <span>⚠ No es asesoramiento financiero. DYOR.</span>
+</div>
+
+<script>
+let allPairs = [];
+let currentTab = 'trending';
+let sortKey = 'volume24h';
+let sortDir = -1;
+let filtersOpen = false;
+let filters = { minMC: 10000, maxMC: 0, minVol: 20000, maxAge: 0, minTxns: 100, minLiq: 5000 };
+
+/* ─── UI HELPERS ─── */
+function toggleFilters() {
+  filtersOpen = !filtersOpen;
+  document.getElementById('filters-panel').className = 'filters-panel' + (filtersOpen ? ' open' : '');
+}
+
+function setTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'traders') renderTraders();
+  else filterAndRender();
+}
+
+function applyFilters() {
+  filters.minMC  = parseFloat(document.getElementById('f-minmc').value)  || 0;
+  filters.maxMC  = parseFloat(document.getElementById('f-maxmc').value)  || 0;
+  filters.minVol = parseFloat(document.getElementById('f-minvol').value) || 0;
+  filters.maxAge = parseInt(document.getElementById('f-age').value)      || 0;
+  filters.minTxns= parseInt(document.getElementById('f-mintxns').value)  || 0;
+  filters.minLiq = parseFloat(document.getElementById('f-minliq').value) || 0;
+  filterAndRender();
+}
+
+function resetFilters() {
+  document.getElementById('f-minmc').value  = '10000';
+  document.getElementById('f-maxmc').value  = '';
+  document.getElementById('f-minvol').value = '20000';
+  document.getElementById('f-age').value    = '0';
+  document.getElementById('f-mintxns').value= '100';
+  document.getElementById('f-minliq').value = '5000';
+  applyFilters();
+}
+
+/* ─── FORMATTERS ─── */
+function fmt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(2);
+}
+function fmtP(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return (n > 0 ? '+' : '') + n.toFixed(2) + '%';
+}
+function fmtAge(ms) {
+  if (!ms || ms < 0) return '—';
+  const min = Math.floor(ms / 60000);
+  if (min < 60)  return min + 'm';
+  const h = Math.floor(min / 60);
+  if (h  < 24)   return h + 'h ' + (min % 60) + 'm';
+  return Math.floor(h/24) + 'd';
+}
+function fmtPrice(p) {
+  if (!p) return '—';
+  const n = parseFloat(p);
+  if (n < 0.000001) return n.toExponential(2);
+  if (n < 0.001)    return n.toPrecision(4);
+  if (n < 1)        return n.toFixed(6);
+  return n.toFixed(4);
+}
+
+/* ─── CORS-SAFE FETCH ─── */
+const PROXIES = [
+  url => url,                                                      // directo
+  url => 'https://corsproxy.io/?' + encodeURIComponent(url),      // proxy 1
+  url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), // proxy 2
+  url => 'https://thingproxy.freeboard.io/fetch/' + url,          // proxy 3
+];
+
+async function safeFetch(url) {
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetch(proxy(url), { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (text.trim().startsWith('<')) continue; // respuesta HTML = proxy falló
+      return JSON.parse(text);
+    } catch (_) { continue; }
+  }
+  throw new Error('Todos los proxies fallaron. Verifica tu conexión a internet.');
+}
+
+/* ─── DATA LOADING ─── */
+async function loadData() {
+  document.getElementById('last-upd').textContent = 'cargando...';
+  document.getElementById('main-section').innerHTML =
+    '<div class="loading"><span class="spinner"></span>Obteniendo tokens de Solana...</div>';
+
+  try {
+    // 1. Boosted/trending tokens
+    const boostData  = await safeFetch('https://api.dexscreener.com/token-boosts/top/v1');
+    const solBoosted = (boostData || []).filter(t => t.chainId === 'solana').slice(0, 30);
+    const boostAddresses = solBoosted.map(t => t.tokenAddress);
+
+    // 2. Latest token profiles
+    const profData    = await safeFetch('https://api.dexscreener.com/token-profiles/latest/v1');
+    const solProfiles = (profData || []).filter(p => p.chainId === 'solana').slice(0, 20);
+    const profAddresses = solProfiles.map(p => p.tokenAddress).filter(a => !boostAddresses.includes(a));
+
+    // Combine unique addresses
+    const allAddresses = [...new Set([...boostAddresses, ...profAddresses])].slice(0, 40);
+
+    let pairs = [];
+    if (allAddresses.length) {
+      const batches = [];
+      for (let i = 0; i < allAddresses.length; i += 30) batches.push(allAddresses.slice(i, i + 30));
+      for (const batch of batches) {
+        const data = await safeFetch('https://api.dexscreener.com/latest/dex/tokens/' + batch.join(','));
+        pairs = pairs.concat((data.pairs || []).filter(p => p.chainId === 'solana'));
+      }
+    }
+
+    // Deduplicate by pairAddress
+    const seen = new Set();
+    allPairs = pairs.filter(p => {
+      if (seen.has(p.pairAddress)) return false;
+      seen.add(p.pairAddress);
+      return true;
+    });
+
+    updateStats();
+    filterAndRender();
+
+    const now = new Date();
+    document.getElementById('last-upd').textContent =
+      'actualizado ' + now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  } catch (e) {
+    document.getElementById('main-section').innerHTML =
+      `<div class="error-box">
+        ⚠ <strong>${e.message}</strong><br><br>
+        <strong>Solución recomendada:</strong><br>
+        Abre el archivo con un servidor local. En tu terminal:<br><br>
+        <code style="background:#1a1a1f;padding:6px 10px;border-radius:4px;display:inline-block;margin:4px 0;">
+          npx serve .
+        </code><br>
+        <em style="font-size:10px;color:var(--text3);">o si tienes Python:</em><br>
+        <code style="background:#1a1a1f;padding:6px 10px;border-radius:4px;display:inline-block;margin:4px 0;">
+          python -m http.server 8080
+        </code><br><br>
+        Luego abre <a href="http://localhost:8080/axiom-vision-scanner.html" target="_blank">localhost:8080/axiom-vision-scanner.html</a><br><br>
+        O ve directo a <a href="https://axiom.trade/vision?chain=sol" target="_blank">axiom.trade/vision ↗</a>
+      </div>`;
+    document.getElementById('last-upd').textContent = 'error de conexión';
+  }
+}
+
+/* ─── STATS ─── */
+function updateStats() {
+  const total   = allPairs.length;
+  const totalVol = allPairs.reduce((s, p) => s + (p.volume?.h24 || 0), 0);
+  const pos     = allPairs.filter(p => (p.priceChange?.h1 || 0) > 0).length;
+  let topPair   = null, topChg = -Infinity;
+  allPairs.forEach(p => {
+    const c = p.priceChange?.h1 || 0;
+    if (c > topChg) { topChg = c; topPair = p; }
+  });
+
+  document.getElementById('s-total').textContent   = total;
+  document.getElementById('s-vol').textContent      = fmt(totalVol);
+  document.getElementById('s-vol-sub').textContent  = total + ' pares activos';
+  document.getElementById('s-pos').textContent      = total ? Math.round(pos / total * 100) + '%' : '—';
+  document.getElementById('s-pos-sub').textContent  = pos + ' tokens al alza';
+  if (topPair) {
+    document.getElementById('s-top').textContent     = '+' + topChg.toFixed(1) + '%';
+    document.getElementById('s-top-name').textContent = topPair.baseToken?.symbol || '—';
+  }
+}
+
+/* ─── FILTER + SORT ─── */
+function filterAndRender() {
+  let data = [...allPairs];
+  const now = Date.now();
+
+  // Tab pre-sort
+  if (currentTab === 'new') {
+    data.sort((a, b) => (b.pairCreatedAt || 0) - (a.pairCreatedAt || 0));
+  } else if (currentTab === 'boosted') {
+    data.sort((a, b) => (b.boosts?.active || 0) - (a.boosts?.active || 0));
+  } else {
+    data.sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
+  }
+
+  // Apply filters
+  if (filters.minMC)   data = data.filter(p => (p.marketCap || 0) >= filters.minMC);
+  if (filters.maxMC)   data = data.filter(p => (p.marketCap || 0) <= filters.maxMC);
+  if (filters.minVol)  data = data.filter(p => (p.volume?.h24 || 0) >= filters.minVol);
+  if (filters.minLiq)  data = data.filter(p => (p.liquidity?.usd || 0) >= filters.minLiq);
+  if (filters.minTxns) data = data.filter(p => ((p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0)) >= filters.minTxns);
+  if (filters.maxAge && filters.maxAge > 0) {
+    data = data.filter(p => !p.pairCreatedAt || (now - p.pairCreatedAt) <= filters.maxAge * 60000);
+  }
+
+  // Column sort
+  if (sortKey) {
+    data.sort((a, b) => {
+      let av, bv;
+      if      (sortKey === 'volume24h') { av = a.volume?.h24 || 0;   bv = b.volume?.h24 || 0; }
+      else if (sortKey === 'mc')        { av = a.marketCap || 0;      bv = b.marketCap || 0; }
+      else if (sortKey === 'liq')       { av = a.liquidity?.usd || 0; bv = b.liquidity?.usd || 0; }
+      else if (sortKey === 'change1h')  { av = a.priceChange?.h1 || 0; bv = b.priceChange?.h1 || 0; }
+      else if (sortKey === 'change24h') { av = a.priceChange?.h24 || 0; bv = b.priceChange?.h24 || 0; }
+      else if (sortKey === 'age')       { av = a.pairCreatedAt || 0;  bv = b.pairCreatedAt || 0; }
+      else if (sortKey === 'txns')      { av = (a.txns?.h24?.buys||0)+(a.txns?.h24?.sells||0); bv = (b.txns?.h24?.buys||0)+(b.txns?.h24?.sells||0); }
+      else return 0;
+      return sortDir * (bv - av);
+    });
+  }
+
+  renderTable(data);
+}
+
+function setSort(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = -1; }
+  filterAndRender();
+}
+
+function sArrow(key) {
+  if (sortKey !== key) return '<span style="opacity:0.2">▼</span>';
+  return sortDir === -1 ? '<span style="color:var(--purple)">▼</span>' : '<span style="color:var(--purple)">▲</span>';
+}
+
+/* ─── RENDER TABLE ─── */
+function renderTable(data) {
+  const maxVol = Math.max(...data.map(p => p.volume?.h24 || 0), 1);
+  const now    = Date.now();
+  const tabLabel = { trending: '🔥 Tokens en tendencia', new: '✦ Tokens nuevos', boosted: '⚡ Tokens boosted' };
+
+  let html = `<div class="section-title">${tabLabel[currentTab] || ''}<span class="count-badge">${data.length}</span></div>`;
+
+  if (data.length === 0) {
+    html += '<div class="error-box">No se encontraron tokens con los filtros actuales.<br>Ajusta los valores y presiona "Aplicar filtros".</div>';
+    document.getElementById('main-section').innerHTML = html;
+    return;
+  }
+
+  html += `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>#</th>
+      <th>Token / Precio</th>
+      <th onclick="setSort('change1h')">1h% ${sArrow('change1h')}</th>
+      <th onclick="setSort('change24h')">24h% ${sArrow('change24h')}</th>
+      <th onclick="setSort('volume24h')">Vol 24h ${sArrow('volume24h')}</th>
+      <th onclick="setSort('mc')">Mkt Cap ${sArrow('mc')}</th>
+      <th onclick="setSort('liq')">Liquidez ${sArrow('liq')}</th>
+      <th onclick="setSort('txns')">Txns 24h ${sArrow('txns')}</th>
+      <th onclick="setSort('age')">Edad ${sArrow('age')}</th>
+      <th>Trade</th>
+    </tr></thead><tbody>`;
+
+  data.slice(0, 60).forEach((p, i) => {
+    const sym    = p.baseToken?.symbol || '?';
+    const name   = p.baseToken?.name   || '';
+    const chg1h  = p.priceChange?.h1   || 0;
+    const chg24h = p.priceChange?.h24  || 0;
+    const vol    = p.volume?.h24       || 0;
+    const mc     = p.marketCap         || 0;
+    const liq    = p.liquidity?.usd    || 0;
+    const txns   = (p.txns?.h24?.buys  || 0) + (p.txns?.h24?.sells || 0);
+    const age    = p.pairCreatedAt ? fmtAge(now - p.pairCreatedAt) : '—';
+    const volPct = Math.round(vol / maxVol * 100);
+    const axiomUrl = 'https://axiom.trade/meme/' + (p.baseToken?.address || p.pairAddress || '');
+    const dexUrl   = p.url || ('https://dexscreener.com/solana/' + p.pairAddress);
+
+    const isNew     = p.pairCreatedAt && (now - p.pairCreatedAt) < 30 * 60000;
+    const isHot     = chg1h > 50;
+    const isBoosted = p.boosts?.active > 0;
+
+    let badge = '';
+    if (isHot)     badge = '<span class="badge badge-hot">HOT</span>';
+    if (isNew)     badge += '<span class="badge badge-new">NEW</span>';
+    if (isBoosted) badge += '<span class="badge badge-purple">⚡</span>';
+
+    html += `<tr onclick="window.open('${axiomUrl}','_blank')">
+      <td class="gray">${i + 1}</td>
+      <td>
+        <div class="token-name">${badge}${sym}</div>
+        <div class="token-addr">$${fmtPrice(p.priceUsd)} · ${name.slice(0,20)}</div>
+      </td>
+      <td class="${chg1h  >= 0 ? 'green' : 'red'}">${fmtP(chg1h)}</td>
+      <td class="${chg24h >= 0 ? 'green' : 'red'}">${fmtP(chg24h)}</td>
+      <td>
+        <div>${fmt(vol)}</div>
+        <div class="vol-bar-wrap"><div class="vol-bar" style="width:${volPct}%"></div></div>
+      </td>
+      <td>${fmt(mc)}</td>
+      <td>${fmt(liq)}</td>
+      <td class="gray">${txns.toLocaleString('es')}</td>
+      <td class="gray">${age}</td>
+      <td>
+        <a class="trade-link" href="${axiomUrl}" onclick="event.stopPropagation()" target="_blank">Trade ↗</a>
+      </td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('main-section').innerHTML = html;
+}
+
+/* ─── TOP TRADERS (ilustrativo) ─── */
+const TRADERS = [
+  { rank:1,  label:'Whale Alpha',    addr:'Cpxu7g...3EVh', pnl:284300, wr:87, trades:412,  roi:2840, tag:'Smart Money' },
+  { rank:2,  label:'Insider SOL',    addr:'BJBgjy...CEVh', pnl:192400, wr:82, trades:298,  roi:1920, tag:'KOL'         },
+  { rank:3,  label:'Degen Master',   addr:'DsHk4F...F8F4', pnl:155700, wr:74, trades:854,  roi:1550, tag:'HOT'         },
+  { rank:4,  label:'Alpha Wallet',   addr:'F4xK9d...7GhJ', pnl:98200,  wr:71, trades:201,  roi:980,  tag:''            },
+  { rank:5,  label:'Sniper Bot',     addr:'Hj2Pq8...m3Nv', pnl:76500,  wr:69, trades:1200, roi:760,  tag:''            },
+  { rank:6,  label:'KOL Trader',     addr:'Lm5Rw1...k9Xt', pnl:54300,  wr:66, trades:378,  roi:540,  tag:'KOL'         },
+  { rank:7,  label:'Dev Wallet',     addr:'Np3Yz7...q2Ab', pnl:41800,  wr:64, trades:156,  roi:418,  tag:''            },
+  { rank:8,  label:'HFT Bot',        addr:'Qt6Cd4...e5Fg', pnl:38200,  wr:62, trades:2400, roi:382,  tag:''            },
+  { rank:9,  label:'Whale SOL',      addr:'Rv8Gh2...s1Ij', pnl:29700,  wr:58, trades:89,   roi:297,  tag:'Smart Money' },
+  { rank:10, label:'Alpha Hunter',   addr:'Sw0Kl5...u4Mn', pnl:22100,  wr:55, trades:445,  roi:221,  tag:''            },
+];
+
+function renderTraders() {
+  let html = `<div class="section-title">👤 Top Traders SOL
+    <span class="count-badge">10</span>
+    <span style="font-size:10px;color:var(--text3);margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0;">
+      ⚠ Datos ilustrativos — conecta tu wallet en Axiom para datos reales
+    </span>
+  </div>`;
+
+  html += `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>#</th>
+      <th>Wallet</th>
+      <th>PnL Total</th>
+      <th>Win Rate</th>
+      <th>Trades</th>
+      <th>ROI</th>
+      <th>Tag</th>
+      <th>Acción</th>
+    </tr></thead><tbody>`;
+
+  TRADERS.forEach(t => {
+    const tagClass = t.tag === 'HOT' ? 'badge-hot' : t.tag === 'KOL' ? 'badge-warn' : 'badge-new';
+    const tagHtml  = t.tag
+      ? `<span class="badge ${tagClass}">${t.tag}</span>`
+      : `<span class="gray">—</span>`;
+
+    html += `<tr>
+      <td class="gray">${t.rank}</td>
+      <td>
+        <div class="token-name">${t.label}</div>
+        <div class="token-addr">${t.addr}</div>
+      </td>
+      <td class="green">+$${t.pnl.toLocaleString('es')}</td>
+      <td>${t.wr}%</td>
+      <td class="gray">${t.trades.toLocaleString('es')}</td>
+      <td class="green">+${t.roi}%</td>
+      <td>${tagHtml}</td>
+      <td><a class="trade-link" href="https://axiom.trade/vision?chain=sol" target="_blank">Ver en Axiom ↗</a></td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text3);line-height:1.7;">
+      Para datos reales de wallets y traders, conecta tu cuenta en
+      <a href="https://axiom.trade/vision?chain=sol" target="_blank">axiom.trade/vision</a>.
+      Axiom no expone una API pública de leaderboard.
+    </div>`;
+
+  document.getElementById('main-section').innerHTML = html;
+}
+
+/* ─── INIT ─── */
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
